@@ -1,3 +1,8 @@
+"""
+app.py - TOR-Unveil Dashboard (CSV-based workflow)
+Main Streamlit application using CSV files for data storage
+"""
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -327,13 +332,8 @@ def main():
                     st.success(f"Analyzed {len(st.session_state.flows_df)} flows")
                     st.rerun()
         
-        # Correlation
-        st.markdown("### 🔗 Correlation")
-        if st.session_state.tor_nodes_df is not None and st.session_state.flows_df is not None:
-            if st.button("🚀 Run Correlation", type="primary", use_container_width=True):
-                if run_correlation():
-                    st.success(f"Found {len(st.session_state.correlation_results)} correlations")
-                    st.rerun()
+       
+
         
         # Data Pipeline
         st.markdown("### ⚡ Quick Pipeline")
@@ -835,33 +835,70 @@ def main():
                     height=400
                 )
             
-            # Generate forensic report
-            st.markdown("### 📄 Forensic Report")
-            
-            if st.button("Generate Forensic Report"):
-                engine = CorrelationEngine()
-                engine.results = filtered_results.to_dict('records')
-                engine.correlation_stats = st.session_state.correlation_stats
-                
-                report = engine.generate_forensic_report()
-                
-                # Display report
-                st.text_area("Report Content", report, height=400)
-                
-                # Download report
-                b64 = base64.b64encode(report.encode()).decode()
-                href = f'<a href="data:text/plain;base64,{b64}" download="tor_unveil_report.txt">📥 Download Report</a>'
-                st.markdown(href, unsafe_allow_html=True)
-    
-    # Footer
-    st.markdown("---")
-    st.markdown("""
-    <div style="text-align: center; color: #6B7280; font-size: 0.9rem;">
-    <strong>TOR-Unveil Forensic System</strong> | CSV-Based Workflow | 
-    Data Directory: <code>./data/</code> | 
-    Always use in accordance with applicable laws and ethics
-    </div>
-    """, unsafe_allow_html=True)
+        # ================================
+        # Generate forensic report
+        # ================================
+        st.markdown("### 📄 Forensic Report")
+
+        if st.button("Generate Forensic Report"):
+            engine = CorrelationEngine()
+
+            report_threshold = 0.6
+            report_df = filtered_results[
+                filtered_results["total_score"] >= report_threshold
+            ].copy()
+
+            engine.results = report_df.to_dict("records")
+            engine.correlation_stats = st.session_state.correlation_stats
+
+            report = engine.generate_forensic_report()
+
+            st.subheader("Forensic Correlation Summary")
+
+            st.markdown(f"""
+            **Total Correlations:** {len(report_df)}  
+            **High Confidence Matches:** {len(report_df[report_df['total_score'] >= 0.8])}  
+            **Average Correlation Score:** {report_df['total_score'].mean():.2f}
+            """)
+
+            st.markdown("### 🧾 Correlation Attribute Analysis")
+
+            report_df["Suspected Tor"] = report_df["total_score"].apply(
+                lambda x: "YES" if x >= 0.6 else "NO"
+            )
+
+            report_df["Confidence Level"] = report_df["total_score"].apply(
+                lambda x: "HIGH" if x >= 0.8 else "MEDIUM" if x >= 0.6 else "LOW"
+            )
+
+            report_df["Evidence Strength"] = report_df["total_score"].apply(
+                lambda x: "Strong multi-factor correlation"
+                if x >= 0.8 else
+                "Moderate Tor-like behavior"
+                if x >= 0.6 else
+                "Weak or inconclusive"
+            )
+
+            st.dataframe(
+                report_df[[
+                    "Suspected Tor",
+                    "Confidence Level",
+                    "tor_node_name",
+                    "tor_node_ip",
+                    "tor_node_country",
+                    "src_ip",
+                    "dst_ip",
+                    "total_score",
+                    "Evidence Strength"
+                ]],
+                use_container_width=True,
+                height=320
+            )
+
+            st.markdown("### 📄 Detailed Forensic Report")
+            st.text_area("Report Content", report, height=350)
+
+
 
 # Run the app
 if __name__ == "__main__":

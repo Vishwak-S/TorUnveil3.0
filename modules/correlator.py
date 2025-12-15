@@ -516,11 +516,26 @@ class CorrelationEngine:
             report.append("-" * 40)
             
             for idx, row in top_results.iterrows():
-                report.append(f"{idx + 1}. {row['tor_node_name']} ({row['tor_node_ip']})")
-                report.append(f"   Flow: {row['src_ip']}:{row['src_port']} → {row['dst_ip']}:{row['dst_port']}")
-                report.append(f"   Score: {row['total_score']:.3f} ({row.get('confidence_badge', 'N/A')})")
-                report.append(f"   Evidence: {row.get('evidence_summary', 'N/A')}")
-                report.append("")
+                        suspected_tor = "YES" if row["total_score"] >= 0.6 else "NO"
+
+                        confidence_level = (
+                            "HIGH" if row["total_score"] >= 0.8
+                            else "MEDIUM" if row["total_score"] >= 0.6
+                            else "LOW"
+                        )
+
+                        report.append(f"{idx + 1}. {row['tor_node_name']} ({row['tor_node_ip']})")
+                        report.append(f"   Node Country: {row.get('tor_node_country', 'Unknown')}")
+                        report.append(
+                            f"   Flow: {row['src_ip']}:{row['src_port']} → "
+                            f"{row['dst_ip']}:{row['dst_port']}"
+                        )
+                        report.append(f"   Suspected Tor: {suspected_tor}")
+                        report.append(f"   Confidence Level: {confidence_level}")
+                        report.append(f"   Avg Correlation Score: {row['total_score']:.3f}")
+                        report.append(f"   Evidence: {row.get('evidence_summary', 'N/A')}")
+                        report.append("")
+
         
         # Methodology
         report.append("METHODOLOGY")
