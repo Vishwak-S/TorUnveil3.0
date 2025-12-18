@@ -4,9 +4,14 @@ import os
 # Add modules directory to path
 sys.path.append('modules')
 
+
+from modules.path_reconstructor import PathReconstructor
+from modules.visualization import NetworkVisualizer
+from modules.report import ReportGenerator
 from tor_map import TorNetworkMapper
 from pcap_parser import PCAPAnalyzer
 from correlator import CorrelationEngine
+
 
 def run_complete_pipeline(pcap_file=None):
     """
@@ -64,6 +69,35 @@ def run_complete_pipeline(pcap_file=None):
     if results_df.empty:
         print("❌ No correlations found")
         return False
+
+    # Step 4: Reconstruct Tor paths
+    print("\n🧭 STEP 4: Reconstructing Tor paths...")
+    path_reconstructor = PathReconstructor()
+    paths_df = path_reconstructor.reconstruct_paths(
+        correlation_df=results_df,
+        tor_nodes_df=tor_df
+    )
+
+    print(f"✅ Reconstructed {len(paths_df)} possible Tor paths")
+
+    # Step 5: Prepare visualization data
+    print("\n📊 STEP 5: Preparing network visualization...")
+    visualizer = NetworkVisualizer()
+    graph_data = visualizer.build_graph(paths_df)
+
+    print("✅ Network graph data prepared")
+
+    # Step 6: Generate forensic report
+    print("\n📄 STEP 6: Generating forensic report...")
+    reporter = ReportGenerator()
+    report_file = reporter.generate(
+        tor_nodes_df=tor_df,
+        flows_df=flows_df,
+        correlation_df=results_df,
+        paths_df=paths_df
+    )
+
+    print(f"✅ Forensic report generated: {report_file}")
     
     print(f"✅ Correlation complete: {len(results_df)} matches found")
     print(f"   High confidence: {correlation_engine.correlation_stats.get('high_confidence', 0)}")
@@ -89,6 +123,7 @@ def run_complete_pipeline(pcap_file=None):
             print(f"   {idx+1}. {row['tor_node_name']} → Score: {row['total_score']:.3f}")
     
     return True
+
 
 def check_dependencies():
     """Check if required modules are installed"""
@@ -128,6 +163,7 @@ def check_dependencies():
     
     return True
 
+
 def main():
     """Main function"""
     
@@ -151,6 +187,7 @@ def main():
         print("\n✅ Pipeline executed successfully!")
     else:
         print("\n❌ Pipeline failed")
+
 
 if __name__ == "__main__":
     main()
