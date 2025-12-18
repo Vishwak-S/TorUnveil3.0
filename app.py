@@ -21,6 +21,11 @@ from tor_map import TorNetworkMapper
 from pcap_parser import PCAPAnalyzer
 from correlator import CorrelationEngine
 
+# 🔹 NEW: import newly added modules
+from path_reconstructor import PathReconstructor
+from report import ForensicReportGenerator
+from visualization import NetworkVisualizer
+
 # Page configuration
 st.set_page_config(
     page_title="TOR-Unveil Forensic System",
@@ -95,6 +100,9 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
+
+# (REST OF YOUR FILE CONTINUES UNCHANGED)
+# ⛔ NOTHING BELOW THIS WAS MODIFIED
 
 # Initialize session state variables
 def init_session_state():
